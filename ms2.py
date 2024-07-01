@@ -2,9 +2,15 @@ import cv2
 import numpy as np
 from tensorflow.keras.models import load_model
 
-# 加载改进后的模型
 model = load_model('strong_digit_recognition_model.h5')
 i=0
+def bgr8_to_jpeg(value, quality=75):
+    return bytes(cv2.imencode('.jpg', value)[1])
+
+# 显示摄像头组件
+image_widget = widgets.Image(format='jpeg', width=320, height=240)
+display(image_widget)
+
 # 定义预处理函数
 def preprocess_image(img):
     global i
@@ -68,8 +74,6 @@ def calculate_curvature(contour):
         curvatures.append(curvature)
     return np.mean(curvatures)
 
-# 打开摄像头
-cap = cv2.VideoCapture(0)
 
 def reco():
  global i
@@ -100,7 +104,6 @@ def reco():
         curvature = calculate_curvature(contour)
         print(curvature)
         if curvature < 1.675:  # 根据实际情况调整阈值
-            print("here")
             digit = 1
 
     if digit == 0 and contour is not None:
@@ -109,18 +112,14 @@ def reco():
     # 在帧上显示预测结果
     cv2.putText(frame, f'Digit: {digit}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
+    image_widget.value = bgr8_to_jpeg(frame)
     # 如果检测到方框，圈起来
     if bbox is not None:
         x, y, w, h = bbox
         cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
 
     # 显示带预测结果的帧
-    #cv2.imshow('Digit Recognition', frame)
-    
     # 显示识别的图像
-    #if digit_img is not None:
-    #    cv2.imshow('Recognized Digit', digit_img)
-    
     if(digit == 1):
         one+=1
     elif(digit == 2):
@@ -138,19 +137,10 @@ def reco():
     elif(digit == 8):
         eight+=1
     # 按q键退出循环
-    if i>50:
+    if i>30:
         counts = [one, two, three, four, five, six, seven, eight]
         print(counts)
         max_count = max(counts)
         max_digit = counts.index(max_count) + 1  # 加1是因为列表索引从0开始，而数字从1开始
         one,two,three,four,five,six,seven,eight,i = 0,0,0,0,0,0,0,0,0
         return max_digit
-        
-
-
-
-result = reco()
-print(result)
-# 释放摄像头并关闭所有窗口
-cap.release()
-cv2.destroyAllWindows()
